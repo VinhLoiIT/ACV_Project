@@ -3,8 +3,8 @@
 - [Python] - link
 
 List 10 projects + chạy thử -> 1/10/2019 -> 15/10/2019
-- [ ] Lợi 5 projects
-- [ ] Luân 5 projects
+- [x] Lợi 5 projects
+- [x] Luân 5 projects
 
 Luan
 - [Python] - MeshFlow - https://github.com/sudheerachary/Mesh-Flow-Video-Stabilization
@@ -12,3 +12,10 @@ Luan
 - [C++] - SteadyFlow - https://github.com/rimchang/SteadyFlow
 - [Python] - https://github.com/AdamSpannbauer/python_video_stab
 - [Matlab] - Bundled Camera Paths for Video Stabilization - https://github.com/SuTanTank/BundledCameraPathVideoStabilization
+
+Loi
+- [C++] [Real-Time-Video-Stabilization](https://github.com/Lakshya-Kejriwal/Real-Time-Video-Stabilization)
+- [C++] [Camera-Video-stabilization](https://github.com/JairajJangle/Camera-Video-stabilization)
+- [C++] [PyVideoStab](https://github.com/somal/PyVideoStab)
+- [C++] [VidStab](https://github.com/georgmartius/vid.stab)
+- [Python] [Video-Stabilization](https://github.com/francocurotto/Video-Stabilization)

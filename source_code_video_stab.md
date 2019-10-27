@@ -7,9 +7,9 @@ List 10 projects + chạy thử -> 1/10/2019 -> 15/10/2019
 - [x] Luân 5 projects
 
 Luan
-- [Python] [MeshFlow](https://github.com/sudheerachary/Mesh-Flow-Video-Stabilization) (error)
+- [Python] [MeshFlow](https://github.com/sudheerachary/Mesh-Flow-Video-Stabilization) (tested but offline)
 - [Python] [Deep Online Video Stabilization with Multi-Grid Warping Transformation Learning](https://github.com/cxjyxxme/deep-online-video-stabilization-deploy) (tested)
-- [C++] [SteadyFlow](https://github.com/rimchang/SteadyFlow) (not)
+- [C++] [SteadyFlow](https://github.com/rimchang/SteadyFlow) (error)
 - [Python] [Simple video stabilization using OpenCV](https://github.com/AdamSpannbauer/python_video_stab) (tested)
 - [Matlab] [Bundled Camera Paths for Video Stabilization](https://github.com/SuTanTank/BundledCameraPathVideoStabilization) (not)
 

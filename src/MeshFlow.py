@@ -4,6 +4,8 @@ from tqdm import tqdm
 from time import time
 from scipy.signal import medfilt
 
+import pdb
+
 # block of size in mesh
 PIXELS = 16
 
@@ -19,10 +21,16 @@ def point_transform(H, pt):
     Return:
             returns a transformed point ptrans = H*pt.
     """
-    a = H[0,0]*pt[0] + H[0,1]*pt[1] + H[0,2]
-    b = H[1,0]*pt[0] + H[1,1]*pt[1] + H[1,2]
-    c = H[2,0]*pt[0] + H[2,1]*pt[1] + H[2,2]
-    return [a/c, b/c]
+    # a = H[0,0]*pt[0] + H[0,1]*pt[1] + H[0,2]
+    # b = H[1,0]*pt[0] + H[1,1]*pt[1] + H[1,2]
+    # c = H[2,0]*pt[0] + H[2,1]*pt[1] + H[2,2]
+    # return [a/c, b/c]
+
+    # H: 3x3
+    # pt: 3x1
+    result = H.dot(pt) # 3x1
+    return result
+
 
 
 def motion_propagate(old_points, new_points, old_frame, old_points_matrix):
@@ -56,16 +64,19 @@ def motion_propagate(old_points, new_points, old_frame, old_points_matrix):
     
     # pre-warping with global homography
     H, _ = cv2.findHomography(old_points, new_points, cv2.RANSAC)
+    # pdb.set_trace()
+    start = time()
     for i in range(int(rows)):
         for j in range(int(cols)):
-            pt = [PIXELS*j, PIXELS*i]
+            pt = np.array([PIXELS*j, PIXELS*i, 1]).reshape(-1, 1)
             ptrans = point_transform(H, pt)
             x_motion[i, j] = pt[0]-ptrans[0]
             y_motion[i, j] = pt[1]-ptrans[1]
-    
+    end = time()
+    print('take = ', end - start)
 
     mark_time = time()
-    tmp_matrix=np.zeros((height,width,2))
+    tmp_matrix=np.zeros((height,width,3))
     for i in range(height):
         for j in range(width):
             ptrans=point_transform(H,old_points_matrix[i, j,:])

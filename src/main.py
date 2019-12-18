@@ -189,8 +189,9 @@ class Application(QMainWindow):
         self.FPS = 24
         self.run_in_background = self.__show_choose_run_in_background()
         if self.run_in_background:
+            self.resize(self.width / 2, self.height)
             self.processed_frame.setHidden(True)
-            self.original_frame.resize(self.width, self.height)
+            self.original_frame.resize(self.width/2, self.height)
         else:
             self.original_frame.resize(self.width/2, self.height)
             self.processed_frame.setHidden(False)
@@ -234,12 +235,9 @@ class Application(QMainWindow):
     @pyqtSlot(QImage)
     def update_original_frame(self, frame):
         if self.run_in_background:
-            frame = frame.scaled(self.width, self.height, Qt.KeepAspectRatio)
-            self.original_frame.move(self.rect().center())
-            self.original_frame.resize(self.width, self.height)
+            frame = frame.scaled(self.width/2, self.height, Qt.KeepAspectRatio)
         else:
             frame = frame.scaled(self.width/2, self.height, Qt.KeepAspectRatio)
-            self.original_frame.resize(self.width / 2, self.height)
         self.original_frame.setPixmap(QPixmap.fromImage(frame))
 
     @pyqtSlot(QImage)

@@ -3,13 +3,13 @@ import cv2
 import time
 import numpy as np
 from tqdm import tqdm
+import argparse
 import matplotlib.pyplot as plt
 from Optimization import real_time_optimize_path
 from MeshFlow import motion_propagate
 from MeshFlow import mesh_warp_frame
 from MeshFlow import generate_vertex_profiles
 from scipy.signal import medfilt
-
 
 class Stabilizer:
     def __init__(self):
@@ -229,15 +229,21 @@ class Stabilizer:
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', type=str, default='./0.avi', help='Input video source')
+    parser.add_argument('output', type=str, default='./0_stable.avi', help='Output video path')
+    args = parser.parse_args()
+
     stabilizer = Stabilizer()
     
-    cap = cv2.VideoCapture('./0.avi')
+    cap = cv2.VideoCapture(args.input)
     ret, first_frame = cap.read()
     if not ret:
+        print('Your input video is unreadable')
         sys.exit(-1)
 
     stabilizer.init(first_frame)
-    out = cv2.VideoWriter('0_stable.avi', cv2.VideoWriter_fourcc(
+    out = cv2.VideoWriter(args.output, cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (stabilizer.frame_width, stabilizer.frame_height))
 
     while (1):
@@ -248,15 +254,7 @@ if __name__ == '__main__':
         stabilizer.stabilize(new_frame)
         out.write(new_frame)
 
-        # cv2.imshow('new_frame', new_frame)
-        # if (cv2.waitKey(1) & 0xFF == ord('q')):
-        #     break
-
-        # print('frame ', frame_n, ': -----------------------------')
-
-#     visualize optimized paths
-    # plot_vertex_profiles(x_paths, sx_paths)
-
     out.release()
     cap.release()
     cv2.destroyAllWindows()
+    print('Done')

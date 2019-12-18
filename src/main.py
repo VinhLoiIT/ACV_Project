@@ -11,21 +11,29 @@ from PyQt5.QtGui import QImage, QPixmap, QIcon
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 
+
 class VideoThread(QThread):
 
     new_frame = pyqtSignal(QImage)
 
-    def __init__(self, src_url: str, FPS: int):
+    def __init__(self, src_url: str, FPS: int, save_path: str = None):
         super(VideoThread, self).__init__()
         self.src_url = src_url
+        self.save_path = save_path
+        self.frame_width = 0
+        self.frame_height = 0
         self.FPS = FPS
 
     def img_2_qimage(self, img: np.ndarray):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         h, w, c = img.shape
         bytes_per_line = c * w
-        img_qt_format = QtGui.QImage(img.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        img_qt_format = QtGui.QImage(
+            img.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         return img_qt_format
+
+    def process_first_frame(self, frame):
+        return frame
 
     def process_frame(self, frame):
         return frame
@@ -34,14 +42,20 @@ class VideoThread(QThread):
         video_capture = cv2.VideoCapture(self.src_url)
         ret, frame = video_capture.read()
         if ret:
-            frame = self.process_frame(frame)
+            frame = self.process_first_frame(frame)
             img_qt_format = self.img_2_qimage(frame)
             self.new_frame.emit(img_qt_format)
+            self.frame_width, self.frame_height = frame.shape[1], frame.shape[0]
         video_capture.release()
         return ret
-    
+
     def run(self):
         video_capture = cv2.VideoCapture(self.src_url)
+        if self.save_path:
+            self.writer = cv2.VideoWriter(f'{self.save_path}', cv2.VideoWriter_fourcc(
+                'M', 'J', 'P', 'G'), 30, (self.frame_width, self.frame_height))
+        else:
+            self.writer = None
 
         while True:
             ret, frame = video_capture.read()
@@ -51,7 +65,10 @@ class VideoThread(QThread):
                 img_qt_format = self.img_2_qimage(frame)
                 self.new_frame.emit(img_qt_format)
                 end = time.time()
-                
+
+                if self.writer:
+                    self.writer.write(frame)
+
                 sleep_time = 1/self.FPS - (end - start)
                 if sleep_time > 0:
                     time.sleep(sleep_time)
@@ -59,26 +76,21 @@ class VideoThread(QThread):
                 break
         video_capture.release()
 
+
 class StabilizeThread(VideoThread):
 
-    def __init__(self, src_url: str, FPS: int):
-        super(StabilizeThread, self).__init__(src_url, FPS)
+    def __init__(self, src_url: str, FPS: int, save_path: str = None):
+        super(StabilizeThread, self).__init__(src_url, FPS, save_path)
         self.stabilizer = Stabilizer()
 
-    def get_first_frame(self):
-        video_capture = cv2.VideoCapture(self.src_url)
-        ret, frame = video_capture.read()
-        if ret:
-            self.stabilizer.init(frame)
-            img_qt_format = self.img_2_qimage(frame)
-            self.new_frame.emit(img_qt_format)
-        video_capture.release()
-        return ret
+    def process_first_frame(self, frame):
+        self.stabilizer.init(frame)
+        return frame
 
     def process_frame(self, frame):
         stabilized_img = self.stabilizer.stabilize(frame)
         return stabilized_img
-    
+
 class Application(QMainWindow):
     def __init__(self):
         super(QMainWindow, self).__init__()
@@ -149,19 +161,22 @@ class Application(QMainWindow):
     def open_file_dialog_callback(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, ok = QFileDialog.getOpenFileName(self, "Select file", "","AVI File (*.avi);;MP4 Files (*.mp4);;All Files (*)", options=options)
+        file_name, ok = QFileDialog.getOpenFileName(
+            self, "Select file", "", "AVI File (*.avi);;MP4 Files (*.mp4);;All Files (*)", options=options)
         if ok:
             print(f'Open video from file: {file_name}')
             self.setup_stream(file_name)
 
     def open_camera_dialog_callback(self):
-        cam_index, ok = QInputDialog.getInt(self, "Select Camera Index", "Enter Camera Index (default = 0)", QLineEdit.Normal)
+        cam_index, ok = QInputDialog.getInt(
+            self, "Select Camera Index", "Enter Camera Index (default = 0)", QLineEdit.Normal)
         if ok:
             print(f'Open camera from Camera index = {cam_index}')
             self.setup_stream(cam_index)
 
     def open_url_dialog_callback(self):
-        url, ok = QInputDialog.getText(self, "Stream URL", "Enter streaming URL", QLineEdit.Normal)
+        url, ok = QInputDialog.getText(
+            self, "Stream URL", "Enter streaming URL", QLineEdit.Normal)
         if ok:
             print(f'Open video from {url}')
             self.setup_stream(url)
@@ -174,9 +189,10 @@ class Application(QMainWindow):
 
     def __show_choose_run_in_background(self):
         text = 'Sometimes, the stabilization step take long time and can be run in background\nDo you want to run in background?'
-        reply = QMessageBox.question(self, 'Run in background?', text, QMessageBox.Yes, QMessageBox.No)
+        reply = QMessageBox.question(
+            self, 'Run in background?', text, QMessageBox.Yes, QMessageBox.No)
         return reply == QMessageBox.Yes
-    
+
     def __init_content(self):
         self.original_frame = QLabel(self)
         self.original_frame.resize(self.width/2, self.height)
@@ -210,14 +226,6 @@ class Application(QMainWindow):
 
     def play_video(self):
         if self.video_stream and self.stabilize_stream:
-            if self.video_stream.isRunning():
-                self.video_stream.quit()
-            if self.stabilize_stream.isRunning():
-                self.stabilize_stream.quit()
-            
-            self.video_stream.wait()
-            self.stabilize_stream.wait()
-
             self.video_stream.start()
             self.stabilize_stream.start()
         else:
@@ -243,7 +251,8 @@ class Application(QMainWindow):
     @pyqtSlot(QImage)
     def update_processed_frame(self, frame):
         if not self.run_in_background:
-            frame = frame.scaled(self.width / 2, self.height, Qt.KeepAspectRatio)
+            frame = frame.scaled(
+                self.width / 2, self.height, Qt.KeepAspectRatio)
             self.processed_frame.setPixmap(QPixmap.fromImage(frame))
 
 
